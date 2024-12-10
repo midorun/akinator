@@ -1,92 +1,111 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logical Expression Converter</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.js"></script>
+    <title>Преобразователь логических выражений</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 20px;
-            line-height: 1.6;
         }
-        input {
-            width: 300px;
-            margin-bottom: 10px;
+        input, select, button {
+            margin: 10px 0;
+            padding: 10px;
+            font-size: 16px;
         }
-        .error {
-            color: red;
-        }
-        .result {
-            font-weight: bold;
-            margin-top: 20px;
+        textarea {
+            width: 100%;
+            height: 100px;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <h1>Logical Expression Converterrrr</h1>
-    <p>Enter a logical expression and choose the mode of transformation:</p>
+    <h1>Преобразователь логических выражений</h1>
+    <p>Введите логическое выражение, используя следующие операторы:</p>
+    <ul>
+        <li><b>!</b> - НЕ</li>
+        <li><b>&</b> - И</li>
+        <li><b>|</b> - ИЛИ</li>
+        <li><b>-></b> - ИМПЛИКАЦИЯ</li>
+        <li><b><-></b> - ЭКВИВАЛЕНЦИЯ</li>
+    </ul>
+    <p>Примеры выражений:</p>
+    <ul>
+        <li><b>Для конъюнкции:</b> <code>A -> B</code>, <code>(A | B) -> C</code></li>
+        <li><b>Для дизъюнкции:</b> <code>A <-> B</code>, <code>!(A & B) -> C</code></li>
+    </ul>
     
-    <input type="text" id="expression" placeholder="Enter logical expression (e.g., A && B -> C)">
-    <br>
-    <button onclick="convertExpression('and')">Convert to DNF (Disjunctive Normal Form)</button>
-    <button onclick="convertExpression('or')">Convert to CNF (Conjunctive Normal Form)</button>
-
-    <div id="error" class="error"></div>
-    <div id="result" class="result"></div>
+    <textarea id="expression" placeholder="Введите логическое выражение здесь"></textarea>
+    
+    <label for="target">Преобразовать в:</label>
+    <select id="target">
+        <option value="conjunction">Конъюнкция (только И)</option>
+        <option value="disjunction">Дизъюнкция (только ИЛИ)</option>
+    </select>
+    
+    <button onclick="transformExpression()">Преобразовать</button>
+    
+    <h2>Результат:</h2>
+    <textarea id="result" readonly></textarea>
 
     <script>
-        function preprocessExpression(expression) {
-            // Replace logical operators with math.js equivalents
-            return expression
-                .replace(/->/g, "=>")   // Replace implication
-                .replace(/<->/g, "<=>") // Replace equivalence
-                .replace(/&&/g, "and")  // Replace AND
-                .replace(/\|\|/g, "or") // Replace OR
-                .replace(/!/g, "not")   // Replace NOT
-                .replace(/\s+/g, "");   // Remove unnecessary whitespace
-        }
+        function transformExpression() {
+            const expression = document.getElementById('expression').value;
+            const target = document.getElementById('target').value;
 
-        function isValidExpression(expression) {
-            // Validate that the input contains only valid characters
-            const validPattern = /^[A-Za-z()!|&<>\-\s]+$/;
-            return validPattern.test(expression);
-        }
-
-        function convertExpression(mode) {
-            const input = document.getElementById('expression').value.trim();
-            const errorElement = document.getElementById('error');
-            const resultElement = document.getElementById('result');
-
-            // Clear previous messages
-            errorElement.innerText = '';
-            resultElement.innerText = '';
+            if (!expression.trim()) {
+                alert("Пожалуйста, введите логическое выражение.");
+                return;
+            }
 
             try {
-                // Validate input
-                if (!isValidExpression(input)) {
-                    throw new Error("Invalid input! Use A-Z, &&, ||, !, ->, <->, ().");
-                }
-
-                // Preprocess the expression
-                const preprocessedExpression = preprocessExpression(input);
-
-                // Wrap the entire expression to ensure precedence
-                const wrappedExpression = `(${preprocessedExpression})`;
-
-                // Parse and simplify the expression
-                const logicExpression = math.parse(wrappedExpression);
-                const simplifiedExpression = mode === "and"
-                    ? math.simplifyLogic(logicExpression, { form: "dnf" }).toString() // Convert to DNF
-                    : math.simplifyLogic(logicExpression, { form: "cnf" }).toString(); // Convert to CNF
-
-                // Display the result
-                resultElement.innerText = `Converted Expression (${mode.toUpperCase()}): ${simplifiedExpression}`;
+                const result = transformLogicalExpression(expression, target);
+                document.getElementById('result').value = result;
             } catch (error) {
-                // Display error message
-                errorElement.innerText = `Error: ${error.message}`;
+                document.getElementById('result').value = `Ошибка: ${error.message}`;
             }
+        }
+
+        function transformLogicalExpression(input, target) {
+            if (!['conjunction', 'disjunction'].includes(target)) {
+                throw new Error("Неверная цель. Используйте 'conjunction' или 'disjunction'.");
+            }
+
+            const operators = {
+                NOT: '!',
+                AND: '&',
+                OR: '|',
+                IMPLIES: '->',
+                EQUIVALENT: '<->',
+            };
+
+            // Заменяем ИМПЛИКАЦИЮ (A -> B => (!A | B))
+            input = input.replace(/([A-Za-z]+)\s*->\s*([A-Za-z]+)/g, (_, lhs, rhs) => `(!${lhs} | ${rhs})`);
+
+            // Заменяем ЭКВИВАЛЕНЦИЮ (A <-> B => ((A & B) | (!A & !B)))
+            input = input.replace(/([A-Za-z]+)\s*<->\s*([A-Za-z]+)/g, (_, lhs, rhs) => `((!${lhs} & !${rhs}) | (${lhs} & ${rhs}))`);
+
+            // Если цель — конъюнкция, применяем законы де Моргана
+            if (target === 'conjunction') {
+                // Закон де Моргана: !(A | B) => (!A & !B)
+                input = input.replace(/!\((.*?)\s*\|\s*(.*?)\)/g, (_, lhs, rhs) => `(!${lhs} & !${rhs})`);
+
+                // Преобразуем все ИЛИ в формат И
+                input = input.replace(/\s*\|\s*/g, ' & ');
+            }
+
+            // Если цель — дизъюнкция, применяем обратные преобразования
+            if (target === 'disjunction') {
+                // Закон де Моргана: !(A & B) => (!A | !B)
+                input = input.replace(/!\((.*?)\s*&\s*(.*?)\)/g, (_, lhs, rhs) => `(!${lhs} | !${rhs})`);
+
+                // Преобразуем все И в формат ИЛИ
+                input = input.replace(/\s*&\s*/g, ' | ');
+            }
+
+            return input;
         }
     </script>
 </body>
