@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logical Expression Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.11.0/math.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        input {
+            width: 300px;
+            margin-bottom: 10px;
+        }
+        .error {
+            color: red;
+        }
+        .result {
+            font-weight: bold;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Logical Expression Converterrrr</h1>
+    <p>Enter a logical expression and choose the mode of transformation:</p>
+    
+    <input type="text" id="expression" placeholder="Enter logical expression (e.g., A && B -> C)">
+    <br>
+    <button onclick="convertExpression('and')">Convert to DNF (Disjunctive Normal Form)</button>
+    <button onclick="convertExpression('or')">Convert to CNF (Conjunctive Normal Form)</button>
+
+    <div id="error" class="error"></div>
+    <div id="result" class="result"></div>
+
+    <script>
+        function preprocessExpression(expression) {
+            // Replace logical operators with math.js equivalents
+            return expression
+                .replace(/->/g, "=>")   // Replace implication
+                .replace(/<->/g, "<=>") // Replace equivalence
+                .replace(/&&/g, "and")  // Replace AND
+                .replace(/\|\|/g, "or") // Replace OR
+                .replace(/!/g, "not")   // Replace NOT
+                .replace(/\s+/g, "");   // Remove unnecessary whitespace
+        }
+
+        function isValidExpression(expression) {
+            // Validate that the input contains only valid characters
+            const validPattern = /^[A-Za-z()!|&<>\-\s]+$/;
+            return validPattern.test(expression);
+        }
+
+        function convertExpression(mode) {
+            const input = document.getElementById('expression').value.trim();
+            const errorElement = document.getElementById('error');
+            const resultElement = document.getElementById('result');
+
+            // Clear previous messages
+            errorElement.innerText = '';
+            resultElement.innerText = '';
+
+            try {
+                // Validate input
+                if (!isValidExpression(input)) {
+                    throw new Error("Invalid input! Use A-Z, &&, ||, !, ->, <->, ().");
+                }
+
+                // Preprocess the expression
+                const preprocessedExpression = preprocessExpression(input);
+
+                // Wrap the entire expression to ensure precedence
+                const wrappedExpression = `(${preprocessedExpression})`;
+
+                // Parse and simplify the expression
+                const logicExpression = math.parse(wrappedExpression);
+                const simplifiedExpression = mode === "and"
+                    ? math.simplifyLogic(logicExpression, { form: "dnf" }).toString() // Convert to DNF
+                    : math.simplifyLogic(logicExpression, { form: "cnf" }).toString(); // Convert to CNF
+
+                // Display the result
+                resultElement.innerText = `Converted Expression (${mode.toUpperCase()}): ${simplifiedExpression}`;
+            } catch (error) {
+                // Display error message
+                errorElement.innerText = `Error: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

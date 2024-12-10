@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Логические выражения</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .expression-container {
+            margin-bottom: 10px;
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Проверка логических выражений</h1>
+    <p>Нажмите на кнопку рядом с примером, чтобы проверить его результат.</p>
+    
+    <!-- Предустановленные примеры -->
+    <div id="examples">
+        <div class="expression-container">
+            <span>true && false</span>
+            <button onclick="evaluateExample('true && false')">Выполнить</button>
+        </div>
+        <div class="expression-container">
+            <span>!true || false</span>
+            <button onclick="evaluateExample('!true || false')">Выполнить</button>
+        </div>
+        <div class="expression-container">
+            <span>true || (false && true)</span>
+            <button onclick="evaluateExample('true || (false && true)')">Выполнить</button>
+        </div>
+        <div class="expression-container">
+            <span>!(false || true) && true</span>
+            <button onclick="evaluateExample('!(false || true) && true')">Выполнить</button>
+        </div>
+        <div class="expression-container">
+            <span>(true && !false) || (false && !true)</span>
+            <button onclick="evaluateExample('(true && !false) || (false && !true)')">Выполнить</button>
+        </div>
+    </div>
+    
+    <!-- Пользовательский ввод -->
+    <h2>Введите ваше выражение</h2>
+    <input type="text" id="userInput" placeholder="Введите логическое выражение">
+    <button onclick="evaluateUserInput()">Выполнить</button>
+    <div id="error" class="error"></div>
+    
+    <!-- Результат -->
+    <div id="result" class="result"></div>
+
+    <script>
+        // Функция для выполнения предустановленных примеров
+        function evaluateExample(expression) {
+            try {
+                const result = eval(expression);
+                document.getElementById('result').innerText = `Результат для "${expression}": ${result}`;
+                document.getElementById('error').innerText = '';
+            } catch (error) {
+                document.getElementById('error').innerText = `Ошибка: ${error.message}`;
+            }
+        }
+
+        // Функция для выполнения пользовательского ввода
+        function evaluateUserInput() {
+            const input = document.getElementById('userInput').value.trim();
+            const validPattern = /^[\s()!|&truefalse]+$/;
+
+            if (!validPattern.test(input)) {
+                document.getElementById('error').innerText = 'Некорректное выражение! Используйте только true, false, &&, ||, !, ().';
+                document.getElementById('result').innerText = '';
+                return;
+            }
+
+            try {
+                const result = eval(input);
+                document.getElementById('result').innerText = `Результат для "${input}": ${result}`;
+                document.getElementById('error').innerText = '';
+            } catch (error) {
+                document.getElementById('error').innerText = `Ошибка: ${error.message}`;
+                document.getElementById('result').innerText = '';
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+<!-- 
+false || true && !false
+!(true && false) || (false || true)
+true || !(false && true)
+false && (true || false)
+!true && (!false || true)
+-->

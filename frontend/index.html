@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akinator Game</title>
+</head>
+<body>
+    <h1>Akinator Game</h1>
+    <div id="game">
+        <p id="question">Загрузка...</p>
+        <button id="yesButton">Да</button>
+        <button id="noButton">Нет</button>
+    </div>
+    <div id="learn" style="display: none;">
+        <p>Обучи меня!</p>
+        <input id="correctAnswer" placeholder="Что ты загадал?" />
+        <input id="distinguishingQuestion" placeholder="Вопрос который мог определить это?" />
+        <label>
+            <input type="checkbox" id="yesForCorrectAnswer" />
+            Yes for the new answer
+        </label>
+        <button id="learnButton">Отправить</button>
+    </div>
+    <script>
+        const apiUrl = "http://localhost:3000";
+
+        async function fetchQuestion() {
+            const response = await fetch(`${apiUrl}/question`);
+            const data = await response.json();
+            const questionElement = document.getElementById("question");
+            const gameDiv = document.getElementById("game");
+            const learnDiv = document.getElementById("learn");
+
+            if (data.isLeaf) {
+                questionElement.textContent = `Это ${data.question}?`;
+            } else {
+                questionElement.textContent = data.question;
+            }
+
+            gameDiv.style.display = "block";
+            learnDiv.style.display = "none";
+        }
+
+        async function sendAnswer(answer) {
+            const response = await fetch(`${apiUrl}/answer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ answer }),
+            });
+
+            const data = await response.json();
+
+            if (data.result === "I guessed it!") {
+                alert("Угадал!");
+                fetchQuestion();
+            } else if (data.result === "I need to learn.") {
+                document.getElementById("game").style.display = "none";
+                document.getElementById("learn").style.display = "block";
+            } else {
+                fetchQuestion();
+            }
+        }
+
+        async function learnNewAnswer() {
+            const correctAnswer = document.getElementById("correctAnswer").value;
+            const distinguishingQuestion = document.getElementById("distinguishingQuestion").value;
+            const yesForCorrectAnswer = document.getElementById("yesForCorrectAnswer").checked;
+
+            if (!correctAnswer || !distinguishingQuestion) {
+                alert("Please fill in all fields.");
+                return;
+            }
+
+            await fetch(`${apiUrl}/learn`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ correctAnswer, distinguishingQuestion, yesForCorrectAnswer }),
+            });
+
+            alert("Спасибо что научил меня!");
+            fetchQuestion();
+        }
+
+        document.getElementById("yesButton").addEventListener("click", () => sendAnswer(true));
+        document.getElementById("noButton").addEventListener("click", () => sendAnswer(false));
+        document.getElementById("learnButton").addEventListener("click", learnNewAnswer);
+
+        fetchQuestion();
+    </script>
+</body>
+</html>
